@@ -1,0 +1,7 @@
+# List of the homework assignment dependencies; anything else will break the autograder.
+# If you want you can use the following command to create the environment (keep in mind you have to be in the same directory as this file):
+# conda create --name myenvname -r "requirements.txt" 
+python=3.12.* # This will be version 3.12.9
+numpy=2.2.4
+matplotlib=3.10.0
+# If you are confused AT ALL about how to set up your environment, please look at piazza.
