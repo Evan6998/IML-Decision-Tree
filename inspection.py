@@ -18,13 +18,14 @@ def error(categories: dict[typing.Any, int]):
     return (total_number - mode_occurance) / total_number
 
 
-def inspect(filename: str):
+def inspect(filename: str, output: str):
     data = np.genfromtxt(filename, delimiter="\t", skip_header=1)
     label = data[:, -1]
     unique, counts = np.unique(label, return_counts=True)
     categories = dict(zip(unique, counts))
-    print(f"entropy: {entropy(categories)}")
-    print(f"error: {error(categories)}")
+    with open(output, 'w') as fout:
+        fout.write(f"entropy: {entropy(categories)}\n")
+        fout.write(f"error: {error(categories)}\n")
 
 
 if __name__ == "__main__":
@@ -33,4 +34,4 @@ if __name__ == "__main__":
     parser.add_argument("output", type=str, help="path to the output file")
     args = parser.parse_args()
 
-    inspect(args.input)
+    inspect(args.input, args.output)

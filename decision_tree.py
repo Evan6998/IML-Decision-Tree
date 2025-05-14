@@ -233,7 +233,9 @@ if __name__ == "__main__":
             fout.write(str(label))
             fout.write('\n')
 
-
     with open(args.metrics_out, 'w') as fout:
         fout.write(f"error(train): {train_err}\n")
         fout.write(f"error(test): {test_err}\n")
+
+    with open(args.print_out, 'w') as fout:
+        ...
