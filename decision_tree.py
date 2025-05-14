@@ -35,13 +35,14 @@ def train(train_file: str, max_depth: int) -> Node:
 def all_columns_identical(dataset: np.ndarray[typing.Any, typing.Any]):
     # exclude label column
     features = dataset[:, :-1]
-    return bool(np.all(features == features[:, [0]]))
+    return bool(np.all([len(np.unique(col)) == 1 for col in features.T])) # type: ignore
 
 
 def is_base_case(dataset: np.ndarray[typing.Any, typing.Any]) -> bool:
     empty_dataset = dataset.size == 0
     all_label_same = len(np.unique(dataset[:, -1])) == 1
-    return empty_dataset or all_label_same or all_columns_identical(dataset)
+    all_col_iden = all_columns_identical(dataset)
+    return empty_dataset or all_label_same or all_col_iden
 
 
 def mode_of_label(dataset: np.ndarray[typing.Any, typing.Any]) -> LabelType:
@@ -63,34 +64,34 @@ def entropy(label: np.ndarray[typing.Any, typing.Any]):
     return entropy
 
 
-data = np.array(
-    [
-        [1, 1, 2, 1, 1],
-        [1, 2, 2, 2, 2],
-        [1, 2, 2, 1, 1],
-        [1, 3, 3, 2, 2],
-        [1, 3, 3, 1, 2],
-        [1, 3, 1, 1, 1],
-        [2, 1, 3, 1, 3],
-        [2, 1, 1, 2, 2],
-        [2, 1, 1, 1, 1],
-        [2, 2, 3, 2, 2],
-        [2, 2, 2, 1, 1],
-        [2, 3, 3, 2, 3],
-        [2, 3, 3, 1, 3],
-        [2, 3, 2, 2, 2],
-        [2, 3, 2, 1, 1],
-        [2, 3, 1, 2, 2],
-    ]
-)
+# data = np.array(
+#     [
+#         [1, 1, 2, 1, 1],
+#         [1, 2, 2, 2, 2],
+#         [1, 2, 2, 1, 1],
+#         [1, 3, 3, 2, 2],
+#         [1, 3, 3, 1, 2],
+#         [1, 3, 1, 1, 1],
+#         [2, 1, 3, 1, 3],
+#         [2, 1, 1, 2, 2],
+#         [2, 1, 1, 1, 1],
+#         [2, 2, 3, 2, 2],
+#         [2, 2, 2, 1, 1],
+#         [2, 3, 3, 2, 3],
+#         [2, 3, 3, 1, 3],
+#         [2, 3, 2, 2, 2],
+#         [2, 3, 2, 1, 1],
+#         [2, 3, 1, 2, 2],
+#     ]
+# )
 
-mapping: dict[typing.SupportsIndex, dict[int, str]] = {
-    0: {1: "Rain", 2: "No Rain"},
-    1: {1: "Before", 2: "During", 3: "After"},
-    2: {2: "Both", 3: "Backpack", 1: "Lunchbox"},
-    3: {1: "Tired", 2: "Not Tired"},
-    4: {1: "Drive", 2: "Bus", 3: "Bike"},
-}
+# mapping: dict[typing.SupportsIndex, dict[int, str]] = {
+#     0: {1: "Rain", 2: "No Rain"},
+#     1: {1: "Before", 2: "During", 3: "After"},
+#     2: {2: "Both", 3: "Backpack", 1: "Lunchbox"},
+#     3: {1: "Tired", 2: "Not Tired"},
+#     4: {1: "Drive", 2: "Bus", 3: "Bike"},
+# }
 
 
 def mutual_information(
@@ -104,11 +105,8 @@ def mutual_information(
 
     h_label_given_feature: float = 0
     for v, count in feature_values.items():
-        print(v, count)
         dataset_given_v = dataset[dataset[:, feature_idx] == v]
-        print(f"{dataset_given_v=}")
         ent = entropy(dataset_given_v[:, -1])
-        print(f"{ent=}")
         h_label_given_feature += count / dataset.shape[0] * ent
 
     i_xy = h_label - h_label_given_feature
@@ -127,24 +125,24 @@ def best_attribute(dataset: np.ndarray[typing.Any, typing.Any]) -> typing.Suppor
 
 def tree_recurse(dataset: np.ndarray[typing.Any, typing.Any], cur_depth: int, max_depth: int) -> Node:
     q = Node()
-    print(f"The shape of dataset is {dataset.shape}:{type(dataset.shape)}")
+    # print(f"The shape of dataset is {dataset.shape}:{type(dataset.shape)}")
     if not is_base_case(dataset) and cur_depth < max_depth:
         q.attr = best_attribute(dataset)
-        print(f"best column: {q.attr}")
+        # print(f"best column: {q.attr}")
         attr_column = dataset[:, q.attr]
         v_x_d = np.unique(attr_column)
         for v in v_x_d:
-            print(f"Processing value {v} in column {attr_column}")
+            # print(f"Processing value {v} in column {attr_column}")
             D_v = dataset[attr_column == v]
-            edge = mapping[q.attr][v]
-            q.children[edge] = tree_recurse(D_v, cur_depth + 1, max_depth)
-            # q.children[v] = tree_recurse(D_v)
-    # q.vote = mode_of_label(dataset)
-    q.vote = mapping[4][mode_of_label(dataset)]
+            # edge = mapping[q.attr][v]
+            # q.children[edge] = tree_recurse(D_v, cur_depth + 1, max_depth)
+            q.children[v] = tree_recurse(D_v, cur_depth + 1, max_depth)
+    q.vote = mode_of_label(dataset)
+    # q.vote = mapping[4][mode_of_label(dataset)]
     return q
 
 
-def predict(): ...
+def predict(x: np.ndarray[typing.Any, typing.Any]): ...
 
 
 def print_tree(node: Node):
