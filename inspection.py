@@ -30,7 +30,7 @@ def inspect(filename: str):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=str, help="path to the input .tsv file")
-    parser.add_argument("output", type=str, help="path to the output .tsv file")
+    parser.add_argument("output", type=str, help="path to the output file")
     args = parser.parse_args()
 
     inspect(args.input)

@@ -35,7 +35,7 @@ def train(train_file: str, max_depth: int) -> Node:
 def all_columns_identical(dataset: np.ndarray[typing.Any, typing.Any]):
     # exclude label column
     features = dataset[:, :-1]
-    return bool(np.all([len(np.unique(col)) == 1 for col in features.T])) # type: ignore
+    return bool(np.all([len(np.unique(col)) == 1 for col in features.T]))  # type: ignore
 
 
 def is_base_case(dataset: np.ndarray[typing.Any, typing.Any]) -> bool:
@@ -123,7 +123,9 @@ def best_attribute(dataset: np.ndarray[typing.Any, typing.Any]) -> typing.Suppor
     return best_idx
 
 
-def tree_recurse(dataset: np.ndarray[typing.Any, typing.Any], cur_depth: int, max_depth: int) -> Node:
+def tree_recurse(
+    dataset: np.ndarray[typing.Any, typing.Any], cur_depth: int, max_depth: int
+) -> Node:
     q = Node()
     # print(f"The shape of dataset is {dataset.shape}:{type(dataset.shape)}")
     if not is_base_case(dataset) and cur_depth < max_depth:
@@ -142,7 +144,32 @@ def tree_recurse(dataset: np.ndarray[typing.Any, typing.Any], cur_depth: int, ma
     return q
 
 
-def predict(x: np.ndarray[typing.Any, typing.Any]): ...
+def predict(root: Node, x: np.ndarray[typing.Any, typing.Any]):
+    current_node = root
+    while True:
+        if current_node.attr is not None:
+            # internal node
+            feature_val = x[current_node.attr]
+            if feature_val in current_node.children:
+                current_node = current_node.children[feature_val]
+            else:
+                return current_node.vote
+        else:
+            # leaf node
+            return current_node.vote
+        
+def error_rate(predict: np.ndarray[typing.Any, typing.Any], label: np.ndarray[typing.Any, typing.Any]) -> float:
+    assert predict.shape == label.shape, "Predictions and labels must have the same shape"
+    return float(1.0 - np.mean(predict == label)) # type: ignore
+
+
+def predict_all(root: Node, filename: str):
+    dataset = np.genfromtxt(filename, delimiter="\t", skip_header=1)
+    features = dataset[:, :-1]
+    result: list[LabelType] = []
+    for row in features:
+        result.append(predict(root, row))
+    return result, error_rate(np.array(result), dataset[:, -1])
 
 
 def print_tree(node: Node):
@@ -191,3 +218,22 @@ if __name__ == "__main__":
     #     print_tree(dTree, file)
 
     root = train(args.train_input, args.max_depth)
+
+    result, train_err = predict_all(root, args.train_input)
+    print(f"error(train): {train_err}")
+    with open(args.train_out, 'w') as fout:
+        for label in result:
+            fout.write(str(label))
+            fout.write('\n')
+
+    result, test_err = predict_all(root, args.test_input)
+    print(f"error(test): {test_err}")
+    with open(args.test_out, 'w') as fout:
+        for label in result:
+            fout.write(str(label))
+            fout.write('\n')
+
+
+    with open(args.metrics_out, 'w') as fout:
+        fout.write(f"error(train): {train_err}\n")
+        fout.write(f"error(test): {test_err}\n")
