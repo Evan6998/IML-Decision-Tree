@@ -1,7 +1,7 @@
 import argparse
 import typing
 import numpy as np
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 type FeatureType = typing.Any
 type LabelType = typing.Any
@@ -193,6 +193,36 @@ def predict_all(root: Node, filename: str):
     return result, error_rate(np.array(result), dataset[:, -1])
 
 
+def plot_error_vs_depth(train_file: str, test_file: str, plot_out: str | None = None):
+    sample_row = np.genfromtxt(train_file, delimiter="\t", skip_header=1, max_rows=1)
+    num_features = sample_row.shape[0] - 1
+
+    depths = list(range(num_features + 1))
+    train_errors: list[float] = []
+    test_errors: list[float] = []
+
+    for depth in depths:
+        root = train(train_file, depth)
+        _, train_err = predict_all(root, train_file)
+        _, test_err = predict_all(root, test_file)
+        train_errors.append(train_err)
+        test_errors.append(test_err)
+
+    plt.figure()
+    plt.plot(depths, train_errors, marker="o", label="Train error")
+    plt.plot(depths, test_errors, marker="s", label="Test error")
+    plt.xlabel("Max depth")
+    plt.ylabel("Error")
+    plt.title("Decision Tree Error vs Depth")
+    plt.legend()
+    plt.grid(True)
+
+    if plot_out:
+        plt.savefig(plot_out, bbox_inches="tight")
+    else:
+        plt.show()
+
+
 def generate_tree(
     node: Node,
     header: list[str],
@@ -250,6 +280,11 @@ if __name__ == "__main__":
         type=str,
         help="path of the output .txt file to which the printed tree should be written",
     )
+    parser.add_argument(
+        "--plot_out",
+        type=str,
+        default=None,
+    )
     args = parser.parse_args()
 
     # Here's an example of how to use argparse
@@ -283,3 +318,6 @@ if __name__ == "__main__":
         for s in generate_tree(root, list(np.genfromtxt(args.train_input, dtype=str, max_rows=1)), None, None, 0):
             fout.write(s)
             fout.write("\n")
+
+    
+    plot_error_vs_depth(args.train_input, args.test_input, args.plot_out)
